@@ -46,7 +46,7 @@ def verificar_email(email):
 if uploaded_file:
     try:
         # Lê o CSV tentando detectar vírgula ou ponto e vírgula, e encoding Latin1 (mais seguro para arquivos com acentos)
-        df = pd.read_csv(uploaded_file, sep=None, engine="python", encoding="latin1")
+df = pd.read_csv(uploaded_file, sep=';', encoding="latin1")
     except Exception as e:
         st.error(f"❌ Erro ao ler o arquivo CSV. Verifique se ele está bem formatado com uma coluna chamada 'email'.\n\nDetalhes técnicos: {e}")
         st.stop()
