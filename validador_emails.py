@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import smtplib
@@ -13,9 +14,11 @@ Este aplicativo valida e-mails por 3 etapas:
 1. **Formato**
 2. **Domínio (DNS MX)**
 3. **Caixa de entrada (SMTP)**
+
+Faça upload de um arquivo `.csv` com uma coluna chamada `email`.
 """)
 
-uploaded_file = st.file_uploader("📁 Envie seu arquivo CSV com uma coluna chamada `email`", type=["csv"])
+uploaded_file = st.file_uploader("📁 Envie seu arquivo CSV", type=["csv"])
 
 def verificar_email(email):
     if not validate_email(email):
@@ -45,10 +48,9 @@ def verificar_email(email):
 
 if uploaded_file:
     try:
-        # Lê o CSV tentando detectar vírgula ou ponto e vírgula, e encoding Latin1 (mais seguro para arquivos com acentos)
-        df = pd.read_csv(uploaded_file, sep=';', encoding="latin1")
+        df = pd.read_csv(uploaded_file, sep=';', encoding='latin1', on_bad_lines='skip')
     except Exception as e:
-        st.error(f"❌ Erro ao ler o arquivo CSV. Verifique se ele está bem formatado com uma coluna chamada 'email'.\n\nDetalhes técnicos: {e}")
+        st.error(f"❌ Erro ao ler o arquivo CSV. Verifique se ele está bem formatado.\n\nDetalhes técnicos: {e}")
         st.stop()
 
     if "email" not in df.columns:
@@ -57,13 +59,32 @@ if uploaded_file:
     else:
         st.success("✅ Arquivo carregado com sucesso!")
         if st.button("🚀 Iniciar Validação"):
+            st.info("⏳ Validando e-mails. Isso pode levar alguns minutos...")
+
             status = []
-            with st.spinner("🔍 Validando e-mails..."):
-                for email in df["email"]:
-                    status.append(verificar_email(email))
+            valido_list = []
+            invalido_list = []
+
+            placeholder_validos = st.empty()
+            placeholder_invalidos = st.empty()
+            barra = st.progress(0, text="Iniciando...")
+
+            for i, email in enumerate(df["email"]):
+                resultado = verificar_email(email)
+                status.append(resultado)
+
+                if resultado == "✅ Válido":
+                    valido_list.append(email)
+                else:
+                    invalido_list.append(f"{email} → {resultado}")
+
+                barra.progress((i + 1) / len(df), text=f"Verificando {i+1} de {len(df)} e-mails...")
+                placeholder_validos.markdown(f"**✅ Válidos:** {len(valido_list)}")
+                placeholder_invalidos.markdown(f"**❌ Não válidos ou não verificáveis:** {len(invalido_list)}")
+
             df["status"] = status
 
-            st.subheader("📊 Resultados da Validação")
+            st.subheader("📊 Resultado Final da Validação")
             st.dataframe(df, use_container_width=True)
 
             validos = df[df["status"] == "✅ Válido"]
