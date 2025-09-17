@@ -44,15 +44,21 @@ def verificar_email(email):
         return "⚠️ Não Verificável"
 
 if uploaded_file:
-    df = pd.read_csv(uploaded_file)
+    try:
+        # Lê o CSV tentando detectar vírgula ou ponto e vírgula, e encoding Latin1 (mais seguro para arquivos com acentos)
+        df = pd.read_csv(uploaded_file, sep=None, engine="python", encoding="latin1")
+    except Exception as e:
+        st.error(f"❌ Erro ao ler o arquivo CSV. Verifique se ele está bem formatado com uma coluna chamada 'email'.\n\nDetalhes técnicos: {e}")
+        st.stop()
 
     if "email" not in df.columns:
         st.error("❌ O arquivo deve conter uma coluna chamada 'email'.")
+        st.stop()
     else:
-        st.success("Arquivo carregado com sucesso!")
+        st.success("✅ Arquivo carregado com sucesso!")
         if st.button("🚀 Iniciar Validação"):
             status = []
-            with st.spinner("Validando e-mails..."):
+            with st.spinner("🔍 Validando e-mails..."):
                 for email in df["email"]:
                     status.append(verificar_email(email))
             df["status"] = status
