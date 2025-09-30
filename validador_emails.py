@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import smtplib
@@ -53,11 +52,15 @@ if uploaded_file:
         st.error(f"❌ Erro ao ler o arquivo CSV. Verifique se ele está bem formatado.\n\nDetalhes técnicos: {e}")
         st.stop()
 
-    if "email" not in df.columns:
+    # Verificação de coluna 'email' robusta
+    colunas_normalizadas = [col.strip().lower() for col in df.columns]
+    if "email" not in colunas_normalizadas:
         st.error("❌ O arquivo deve conter uma coluna chamada 'email'.")
         st.stop()
     else:
+        email_col = df.columns[colunas_normalizadas.index("email")]
         st.success("✅ Arquivo carregado com sucesso!")
+
         if st.button("🚀 Iniciar Validação"):
             st.info("⏳ Validando e-mails. Isso pode levar alguns minutos...")
 
@@ -69,7 +72,7 @@ if uploaded_file:
             placeholder_invalidos = st.empty()
             barra = st.progress(0, text="Iniciando...")
 
-            for i, email in enumerate(df["email"]):
+            for i, email in enumerate(df[email_col]):
                 resultado = verificar_email(email)
                 status.append(resultado)
 
@@ -88,7 +91,7 @@ if uploaded_file:
             st.dataframe(df, use_container_width=True)
 
             validos = df[df["status"] == "✅ Válido"]
-            csv = validos[["email"]].to_csv(index=False)
+            csv = validos[[email_col]].rename(columns={email_col: "email"}).to_csv(index=False)
             st.download_button(
                 "📥 Baixar e-mails válidos (.csv)",
                 csv,
